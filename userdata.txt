@@ -1,0 +1,1 @@
+{"name":"stachu sppśw","lProg":3,"desc":"1234","slider":"73","z":{"m":false,"g":true,"c":false,"k":false},"edu":"s","date":"275760-01-01","color":"#71bdfb","num":"71"}

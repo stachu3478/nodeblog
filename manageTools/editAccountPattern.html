@@ -1,0 +1,13 @@
+<li>
+	<form action=setAccount method=POST>
+		Login: <input type=text name=username placeholder="Nazwa użytkownika" value="##username">
+		Hasło: <input type=text name=password placeholder="Hasło" value="##password">
+		OP: <input type=checkbox name=op ##op>
+		<input type=text name=_id value="##_id" hidden>
+		<input type=submit value="Zapisz">
+	</form>
+	<form action=removeAccount method=POST>
+		<input type=text name=_id value="##_id" hidden>
+		<input type=submit value="Usuń">
+	</form>
+</li>

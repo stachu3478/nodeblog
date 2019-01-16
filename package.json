@@ -1,0 +1,13 @@
+{
+	"name": "blog",
+	"version": "1.0.0",
+	"description": "Blog z mikroserwisem i systemem kont w bazie danych",
+	"license": "UNLICENSED",
+	"main": "blog231517624",
+	"bin": "server.js",
+	"dependencies": {
+		"bson": "^4.0.1",
+		"mongodb": "^3.1.10",
+		"node-session": "^1.2.1"
+	}
+}

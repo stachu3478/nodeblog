@@ -1,0 +1,2 @@
+﻿[Profil](9-1-2019)
+Funkcja w nawigacji "Mój profil" przedstawia działanie mikroserwisu przy użyciu obiektów typu JSON.

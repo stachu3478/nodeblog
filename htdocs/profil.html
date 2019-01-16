@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Article system 3000 - Your profile</title>
+		<meta charset="UTF-8">
+	</head>
+	<body>
+		<h1>
+			Baner
+		</h1>
+			##main
+		<nav>
+			<a href=index.html>Strona główna</a>
+			<a href=profil.html>Mój profil</a>
+		</nav>
+		<footer>
+			Copyright &copy Stan Players
+		</footer>
+		<script src="jquery.min.js"></script>
+		<script src="fhandler.js"></script>
+		<script>
+			window.oload = load();
+			document.getElementsByTagName("footer")[0].innerText += " " + new Date().getFullYear();
+		</script>
+	</body>
+</html>

@@ -1,0 +1,6 @@
+﻿[Hello world](1-1-2019)
+Przykładowy artykuł jaki mógłby wyglądać na przykładowej stronie z użyciem serwera node.js oraz podstawowych bibliotek
+do hostingu strony www. System obsługuje dodawanie artykułów przy użyciu plików tekstowych z metadanymi. Tytuł artykułu
+jest odczytywany z pierwszego nawiasu kwadratowego w pliku, natomiast data wydania jest odczytywana z pierwszego nawiasu
+okrągłego. Istnieje szablon na artykuł, w którym na tytuł podmienia się ciąg znaków "##title", na treść "##main", a na
+datę wydania "##date".
