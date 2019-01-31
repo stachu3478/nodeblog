@@ -1,33 +1,47 @@
-<div>
-	Zalogowano:   <button onclick="location.assign('logout')">Wyloguj</button>
-	<input id=name type=text placeholder=Ksywka><br>
-	Jak bardzo lubię programować<br>
-	<select>
-		<option id=l4>Bardzo lubię</option>
-		<option id=l3>Lubię</option>
-		<option id=l2>Średnio</option>
-		<option id=l1>Mało</option>
-		<option id=l0>Wcale</option>
-	</select><br>
-	<textarea placeholder=Opis id=desc></textarea><br>
-	Moja ulubiona pozycja na ślizgaczu:<br>
-	<input type=range min=0 max=100 id=age><br>
-	Zainteresowania<br>
-	<input type=checkbox id=zm>Muzyka<br>
-	<input type=checkbox id=zg>Gry<br>
-	<input type=checkbox id=zc>Motoryzacja<br>
-	<input type=checkbox id=zk>Kultura<br>
-	Etap edukacji:<br>
-	<input type=radio name=edu id=ep>Szkoła podstawowa<br>
-	<input type=radio name=edu id=et>Technikum<br>
-	<input type=radio name=edu id=es>Studia<br>
-	<input type=radio name=edu id=en>Edukacja zakończona<br>
-	Data urodzenie:<input type=date id=ur><br>
-	Ulubiony kolor: <input type=color id=col><br>
-	Ulubiona liczba: <input type=number id=num><br>
-	<span id=state>Kliknij przycisk Zapisz aby zapisać dane na serwerze</span>
-	<button onclick="save()">Zapisz</button>
-	<div>
-		##panel
+<div id=main class='w3-container'>
+	Zalogowano:   <button onclick="location.assign('logout')">Wyloguj</button><br>
+	<div class='w3 nav w3-blue'>
+		<div class='w3-bar-item w3-button w3-border-aqua' onclick='pokazNaglowek(0)' id=fsect>Mój profil</div>
+		<div class='w3-bar-item w3-button w3-border-aqua' onclick='pokazNaglowek(1)'>Panel edycji</div>
+		<div class='w3-bar-item w3-button w3-border-aqua' onclick='pokazNaglowek(2)'>Zmień hasło</div>
 	</div>
+	<section id=profil class='w3-panel w3-light-blue w3-border-blue w3-card' hidden>
+		<input id=name type=text placeholder=Ksywka><br>
+		Jak bardzo lubię programować<br>
+		<select>
+			<option id=l4>Bardzo lubię</option>
+			<option id=l3>Lubię</option>
+			<option id=l2>Średnio</option>
+			<option id=l1>Mało</option>
+			<option id=l0>Wcale</option>
+		</select><br>
+		<textarea placeholder=Opis id=desc rows=10 cols=50></textarea><br>
+		Moja ulubiona pozycja na ślizgaczu:<br>
+		<input type=range min=0 max=100 id=age><br>
+		Zainteresowania<br>
+		<input type=checkbox id=zm>Muzyka<br>
+		<input type=checkbox id=zg>Gry<br>
+		<input type=checkbox id=zc>Motoryzacja<br>
+		<input type=checkbox id=zk>Kultura<br>
+		Etap edukacji:<br>
+		<input type=radio name=edu id=ep>Szkoła podstawowa<br>
+		<input type=radio name=edu id=et>Technikum<br>
+		<input type=radio name=edu id=es>Studia<br>
+		<input type=radio name=edu id=en>Edukacja zakończona<br>
+		Data urodzenia:<input type=date id=ur><br>
+		Ulubiony kolor: <input type=color id=col><br>
+		Ulubiona liczba: <input type=number id=num><br>
+		<span id=state>Kliknij przycisk Zapisz aby zapisać dane na serwerze</span>
+		<button onclick="save()">Zapisz</button>
+	</section>
+	<section id=edytor class='w3-panel'>
+		##panel
+	</section>
+	<section id=zmienHaslo class='w3-panel w3-light-blue w3-border-blue w3-card' hidden>
+		<form action=changePassword method=POST id=f>
+			<input type=password name=current placeholder='Stare hasło'><br>
+			<input type=password name=new1 oninput='testInput()' placeholder='Nowe hasło'><br>
+			<input type=password name=new2 oninput='testInput()' placeholder='Powtórz hasło'><br>
+		</form>
+	</section>
 </div>

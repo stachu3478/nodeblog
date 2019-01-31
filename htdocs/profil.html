@@ -3,23 +3,49 @@
 	<head>
 		<title>Article system 3000 - Your profile</title>
 		<meta charset="UTF-8">
+		<link rel='stylesheet' href='style.css' type='text/css'>
+		<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 	</head>
 	<body>
-		<h1>
+		<h1 class='w3-bar w3-sand w3-border-green w3-center'>
 			Baner
 		</h1>
+		<h4 class='w3-panel w3-yellow w3-border-amber'>
+			##out
+		</h4>
+		<main class='w3-container w3-cyan'>
 			##main
-		<nav>
-			<a href=index.html>Strona główna</a>
-			<a href=profil.html>Mój profil</a>
+		</main>
+		<nav class='w3-bar w3-dark-grey'>
+			<a class="w3-bar-item w3-button" href=index.html>Strona główna</a>
+			<a class="w3-bar-item w3-button" href=nowy_system.html>Nowy system artykułów</a>
+			<a class="w3-bar-item w3-button" href=profil.html>Mój profil</a>
 		</nav>
-		<footer>
+		<footer class='w3-bar w3-black'>
 			Copyright &copy Stan Players
 		</footer>
 		<script src="jquery.min.js"></script>
 		<script src="fhandler.js"></script>
 		<script>
-			window.oload = load();
+			var ok = false;
+			var el;
+			function pokazNaglowek(id){
+				var naglowki = ["profil","edytor","zmienHaslo"];
+				for(var i = 0;i<3;i++){
+					if(i == id){
+						document.getElementById(naglowki[i]).hidden = false;
+						$('.w3-button')[i].style.borderBottomWidth = '0px';
+					} else {
+						document.getElementById(naglowki[i]).hidden = true;
+						$('.w3-button')[i].style.borderBottomWidth = '2px';
+					};
+				};
+			};
+			document.body.onload = function(){
+				load();
+				pokazNaglowek(##naglowek);
+				$('#main')[0].hidden = false;
+			};
 			document.getElementsByTagName("footer")[0].innerText += " " + new Date().getFullYear();
 		</script>
 	</body>

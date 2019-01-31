@@ -1,12 +1,30 @@
 Panel administratora.
-<form action=newAccount method=POST>
+<form action=newAccount method=POST class='w3-container w3-light-blue w3-border-blue w3-card'>
 	Dodawanie nowego konta<br>
 	<input type=text placeholder=Nazwa name=username><br>
 	<input type=text placeholder=Hasło name=password><br>
+	<input type=text placeholder=E-mail name=email><br>
 	OP <input type=checkbox name=admin><br>
 	<input type=submit value=Dodaj>
+</form><br>
+<form action=setConfig method=POST class='w3-container w3-light-blue w3-border-blue w3-card'>
+	Zmień częstotliwość zaminy haseł:<br>
+	<select	name=type>
+		<option value=d>Dni</option>
+		<option value=h selected>Godziny</option>
+		<option value=m>Minuty</option>
+	</select>
+	<input type=number placeholder=Ile value=##pwdFresh step=0.0000001 name=pwdChange><br>
+	<input type=submit value=Ustaw>
+</form><br>
+<form action=query method=POST class='w3-container w3-light-blue w3-border-blue w3-card'>
+	Zapytanie do bazy danych:<br>
+	<textarea rows=6 cols=30 name=query placeholder='Tu wpisz swoje zapytanko...'></textarea><br>
+	<input type=submit value='Wyślij'>
 </form>
-Lista kont:
-<ul list-style=none>
-	##list
-</ul>
+<div class='w3-panel w3-card w3-light-blue w3-border-blue'>
+	Lista kont:
+	<ul class='w3-ul'>
+		##list
+	</ul>
+</div>
