@@ -9,13 +9,13 @@ iota.getNodeInfo()
     .then(info => console.log(info))
     .catch(err => {})
 
-const seed1 = 'HELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDD'
-const seed2 = 'PUEOTSEITFEVEWCWBTSIZM9NKRGJEIMXTULBACGFRQK9IMGICLBKW9TTEVSDQMGWKBXPVCBMMCXWMNPDX'
+const seed2 = 'HELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDHELLOWORLDD'
+const seed1 = 'PUEOTSEITFEVEWCWBTSIZM9NKRGJEIMXTULBACGFRQK9IMGICLBKW9TTEVSDQMGWKBXPVCBMMCXWMNPDX'
 const message = '9LOREM9IPSUM9DOLOR9SIT9AMET'//iota.utils.toTrytes('Hello World!')
 
 iota
    .getAccountData(seed1, {
-    start: 0,
+    start: 100,
     security: 1
 })
   .then(accountData => {
@@ -32,7 +32,7 @@ iota
 	const transfers = [
 	  {
 		value: 0,
-		address: accountData.addresses[0],
+		address: accountData.addresses[accountData.addresses.length],
 		message: message
 	  }
 	]
