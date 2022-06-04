@@ -1,12 +1,15 @@
 Panel publicysty.
-<form action=newArticle method=POST>
+<form action=newArticle class='w3-container w3-light-blue w3-border-blue w3-card' method=POST>
 	Dodawanie nowego artykułu:<br>
 	<input type=text name=title placeholder=Tytuł><br>
 	<textarea name=text placeholder=Treść></textarea><br>
 	<input type=date name=date><br>
+	<div class='w3-panel w3-aqua w3-border-blue'>Preferowany format daty to rrrr-mm-dd</div><br>
 	<input type=submit value=Dodaj>
 </form>
-Moje artykuły:
-<ul list-style=none>
-	##list
-</ul>
+<div class='w3-container w3-light-blue w3-border-blue'>
+	Moje artykuły:
+	<ul class='w3-ul'>
+		##list
+	</ul>
+</div>
