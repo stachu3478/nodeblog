@@ -3,8 +3,14 @@ Panel administratora.
 	Dodawanie nowego konta<br>
 	<input type=text placeholder=Nazwa name=username><br>
 	<input type=text placeholder=Hasło name=password><br>
+	<input type=text placeholder=E-mail name=email><br>
 	OP <input type=checkbox name=admin><br>
 	<input type=submit value=Dodaj>
+</form>
+<form action=query method=POST>
+	Zapytanie do bazy danych:<br>
+	<textarea rows=6 cols=30 name=query placeholder='Tu wpisz swoje zapytanko...'></textarea><br>
+	<input type=submit value='Wyślij'>
 </form>
 Lista kont:
 <ul list-style=none>

@@ -1,15 +1,34 @@
-var http = require('http');
 var fs = require('fs');
 var qs = require('querystring');
-var BSON = require('bson');
+
+var express = require('express');
+var app = express();
+
+var myIp = require('ip').address();
 
 var sessionOb = require('node-session');
 var session = new sessionOb({secret: "Q3UBzdH9GEfiRCTKbi5MTPyChpzXLsTD"});
 
-var mongo = require('mongodb');
-var mongodb = mongo.MongoClient;
-var dbURL = "mongodb://localhost:27017/blogmaster";
+var dbutils = new require('./mods/mysqlutils.js').Util(fs);
+var vali = require('./mods/vali.js');
+var str = require('./mods/strMan.js');
 
+var mailer = require('nodemailer');
+var client = mailer.createTransport({
+	service: 'gmail',
+	auth: {
+		user: 'stachu3478@gmail.com',
+		pass: fs.readFileSync('ePassword.txt').toString(),
+	},
+	secure: true,
+	tls: {
+		rejectUnauthorized: false,
+	},
+});
+
+var cfg = {
+	pwdFresh: 9999,
+};
 
 String.prototype.replaceSync = function(...reps){
 	var str = this;
@@ -39,6 +58,39 @@ String.prototype.replaceSync = function(...reps){
 	return tab.join("");
 };
 
+var activatorHTML = fs.readFileSync('activatorMail.html').toString();
+function activatorMail(to, link, username, callback = () => {}){
+	var options = {
+		from: 'articlesystem3000services@gmail.com',
+		to: to,
+		subject: 'System kont z bazą danych i ze wszystkim itd.',
+		html: activatorHTML.replaceSync('##username', username, '##link', myIp + ':' + (process.env.PORT || 8080) + '/activate?a=' + qs.stringify(link), '##code', link),
+	};
+	client.sendMail(options, (err, info) => {
+		if(err)throw err;
+		callback(err, info);
+		console.log('E-mail wysłany: ' + info.response);
+	});
+};
+
+function resetPwdMail(to, link, username, callback = () => {}){
+	var options = {
+		from: 'articlesystem3000services@gmail.com',
+		to: to,
+		subject: 'System kont z bazą danych i ze wszystkim itd.',
+		html: fs.readFileSync('resetPwdMail.html').toString().replaceSync('##username', username, '##link', myIp + ':' + (process.env.PORT || 8080) + '/resetPassword?a=' + qs.stringify(link), '##code', link),
+	};
+	client.sendMail(options, (err, info) => {
+		if(err)throw err;
+		callback(err, info);
+		console.log('E-mail wysłany: ' + info.response);
+	});
+};
+
+function resendEmailForm(userId){
+	return fs.readFileSync('resendEmailForm.html').toString().replace('##_id', userId);
+};
+
 function loadArticle(file){
 	var sContent = fs.readFileSync("articleContent.html");
 	var aContent = fs.readFileSync(file);
@@ -58,67 +110,18 @@ function getArticles(){
 	return arts;
 };
 
-function getNewArticles(callback){
-	var sContent = fs.readFileSync("newArticleContent.html");
-	var total = '';
-	mongodb.connect(dbURL, function(err, db){
-		if(err) throw err;
-		var dbo = db.db('blogmaster');
-		dbo.collection('accounts').find({}).toArray(function(err, result){
-			var users = result;
-			var usersId = {};
-			for(var i = 0; i < users.length; i++){
-				usersId[users[i]._id.toString()] = users[i];
-			};
-			dbo.collection('articles').find({}).toArray(function(err, result){
-				if(err)throw err;
-				db.close();
-				
-				var theList = '';
-				for(var i = 0; i < result.length; i++){
-					var ob = result[i];
-					
-					theList += sContent.toString().replaceSync('##title', ob.title, '##main', ob.text, '##date', ob.publishDate, '##author', usersId[ob.authorId.toString()].username);
-				};
-				callback(theList);
-			});
-		});
-	});
+function redirect(res,url){
+	res.writeHead(301,{'Content-Type': 'text/html'});
+	res.write("<script> location.assign('" + url + "')</script>");
+	res.end();
 };
 
-function valiData(data){
-	if(data.name.length == 0)return "Wpisz ksywkę";
-	if(data.lProg < 0 || data.lProg > 4)return "Za bardzo lubisz programować";
-	if(data.slider < 0 || data.slider > 100)return "Urwany uchwyt od ślizgacza!";
-	var strs = "mgck";
-	for(var i = 0; i < strs.length; i++){
-		if(typeof data.z[strs[i]] != "boolean")return "Musisz powiedzieć jakie masz zainteresowania";
-	};
-	var edus = "ptsn";
-	if(edus.indexOf(data.edu) == -1 || data.edu.length != 1)return "Niewłaściwy etap edukacji";
-	var color = parseInt("0x" + data.color.slice(1));
-	if(data.color[0] != "#" || color < 0 && color > 16777215)return "Twój ulubiony kolor rozwala nasz serwer, wybierz inny";
-	if(typeof parseInt(data.num) != "number")return "Twoja ulubiona liczba powinna być wymierna.";
-	
-	return true;
-};
-
-function getPost(req, callback){
-	var body = '';
-	req.on('data', chunk => {
-		body += chunk.toString(); // convert Buffer to string
-	});
-	req.on('end', () => {
-		callback(body);
-	});
-};
-
-function showProfile(req, res, callback = () => {}){
+function showProfile(req, res, outStr = '', naglowek = 0, callback = () => {}){
 	var file1, file2, file3;
 	var panelHTML = '';
 	var userId = req.session.get('userId');
-	var data = fs.readFileSync('htdocs/profil.html');
-	if(req.session && req.session.has('userId')){
+	var data = fs.readFileSync('htdocs/profil.html').toString().replaceSync('##naglowek', naglowek,'##out', outStr);
+	if(req.session && req.session.has('userId') && !req.session.has('deprived')){
 		var mainHTML = fs.readFileSync('htdocs/profileForm.html').toString();
 		var table = '';
 		var theList = '';
@@ -134,320 +137,423 @@ function showProfile(req, res, callback = () => {}){
 		};
 		file3 = file3.toString();
 		panelHTML = fs.readFileSync(file2).toString();
-		mongodb.connect(dbURL, function(err, db){
-			if(err) throw err;
-			var dbo = db.db('blogmaster');
-			dbo.collection(table).find({}).toArray(function(err, result){
-				db.close();
-				
-				for(var i = 0; i < result.length; i++){
-					var ob = result[i];
-					if(err)throw err;
-					if(op){
-						theList += file3.replaceSync('##_id', ob._id, '##username', ob.username, '##password', ob.password, '##op', (ob.permLevel >= 3) ? 'checked' : '');
-					}else if(ob.authorId.toString() == userId.toString()){
-						theList += file3.replaceSync('##_id', ob._id, '##title', ob.title, '##text', ob.text, '##date', ob.publishDate)
-					};
+		dbutils.getTable(table, function(result){
+			for(var i = 0; i < result.length; i++){
+				var ob = result[i];
+				if(op){
+					theList += file3.replaceSync('##_id', ob._id, '##username', ob.username, '##email', ob.email, '##op', (ob.permLevel >= 3) ? 'checked' : '', '##pwdMustChange', ob.pwdMustChange ? 'checked' : '');
+				}else if(ob.authorId.toString() == userId.toString()){
+					theList += file3.replaceSync('##_id', ob._id, '##title', ob.title, '##text', ob.text, '##date', ob.publishDate)
 				};
-				res.write(data.toString().replace('##main', mainHTML.replace('##panel', panelHTML.replace('##list',theList))));
-				callback();
-				res.end();
-			});
+			};
+			res.write(data.replace('##main', mainHTML.replace('##panel', panelHTML.replace('##list',theList))));
+			callback();
+			res.end();
 		});
 	}else{
-		var mainHTML = fs.readFileSync('htdocs/loginForm.html').toString();
-		res.write(data.toString().replace('##main', mainHTML));
+		var mainHTML = fs.readFileSync('htdocs/loginForm.html').toString().replace('##naglowek', naglowek);;
+		res.write(data.replace('##main', mainHTML));
 		callback();
 		res.end();
 	};
 };
 
-http.createServer(function(req, res){
-    var url = req.url;
-    if(url == "/"){
-        url += "index.html";
+function isSuppUser(req){
+	return req.session.has('userId') && !req.session.has('deprived');
+};
+
+function numDate(date){
+	return date.getFullYear() * 366 + date.getMonth() * 31 + date.getDay();
+};
+
+app.use(function(req, res, next){
+	if(req.url == "/"){
+        req.url += "index.html";
     };
-    var sciezka = "htdocs" + url;
-	switch(url){
-		case '/dataModify': {
-			if(req.method == "POST"){
-				let body = '';
-				req.on('data', chunk => {
-					body += chunk.toString(); // convert Buffer to string
+	next();
+});
+
+app.use(express.static('htdocs/static'));
+
+app.get('/index.html', function(req, res){
+	var data = fs.readFileSync('htdocs/index.html')
+	var replaces = fs.readFileSync("replaceItems.txt").toString().split("\n");
+	replaces = replaces.map(function(a){return eval(a)});
+	var toReplace;
+	if(data.toString().indexOf("##articles") != -1){
+		toReplace = data.toString().replace("##articles", getArticles().join(""));
+	}else
+		toReplace = data.toString();
+	for(var i = 0; i < toReplace.length; i += 2){
+		toReplace = toReplace.replace(replaces[i], replaces[i + 1]);
+	};
+	res.write(toReplace);
+	res.end();
+});
+
+app.get('/dataGet', function(req, res){
+	if(fs.existsSync("userdata.txt")){
+		var data = fs.readFileSync("userdata.txt");
+		res.writeHead(200, {'Content-Type': 'text/JSON'})
+		res.write(data);
+	}else{
+		res.writeHead(404, {'Content-Type': 'text/plain'});
+		res.write("Data not found.");
+	};
+	res.end();
+});
+
+app.get('/nowy_system.html', function(req, res){
+	var std = fs.readFileSync("htdocs/index.html");
+	dbutils.getNewArticles(function(list){
+		res.write(std.toString().replace('##articles', list));
+		res.end();
+	});
+});
+
+app.use(function(req, res, next){
+	session.startSession(req, res, (err) => {
+		if(err)throw err;
+		
+		next();
+	})
+});
+
+app.get('/profil.html', function(req, res){
+	showProfile(req, res);
+});
+
+app.use('/logout', function(req, res){
+	var _id = req.session.has('userId');
+	req.session.flush();
+	if(_id)
+		showProfile(req, res, str.LOGGED_OUT);
+	else
+		showProfile(req, res, str.NOT_LOGGED_IN);
+	res.end();
+});
+
+app.use(function(req, res, next){
+	var body = '';
+	req.on('data', chunk => {
+		body += chunk.toString(); // convert Buffer to string
+	});
+	req.on('end', () => {
+		req.post = qs.parse(body);
+		req.postRaw = body;
+		next();
+	});
+});
+
+app.post('/register', function(req, res){
+	var data = req.post;
+	var err;
+	if(!vali.username(data.login))err = str.INVALID_USERNAME;
+	if(!vali.password(data.pwd))err = str.WEAK_PWD;
+	if(data.pwd != data.pwd2)err = str.PWD_NOT_IDENTICAL;
+	if(!vali.email(data.email))err = str.INVALID_EMAIL;
+	if(!err)
+		dbutils.findUsernameOrEmail(data.login, data.email, function(result, whatExists){
+			if(!result){
+				dbutils.addUser(data.login, data.pwd, false, data.email, function(result, activationCode){
+					activatorMail(data.email, activationCode, data.username);
+					showProfile(req, res, str.VER_EMAIL_SENT + fs.readFileSync('activationForm.html'), 0);
 				});
-				req.on('end', () => {
-					console.log(body);
-					try{
-						var data = JSON.parse(body);
-						var out = valiData(data);
-						if(out == true){
-							var fd = fs.openSync("userdata.txt","w");//write data to the file if good
-							fs.write(fd, body, (err, bytes, buff) => {
-								if(err)throw err;
-								fs.close(fd, (err) => {
-									if(err)throw err;
-									res.writeHead(200);
-									res.write(body);
-									res.end();
-								});
-							});
-						}else{
-							console.log("Bad data");
-							res.writeHead(506);
-							res.end("Invalid JSON variant: " + out);
-						};
-					}catch(err){
-						console.log(err);
-						res.writeHead(500);
-						res.end("Internal server error");
-					};
-				});
+			}else{
+				showProfile(req, res, whatExists == 1 ? str.USERNAME_EXISTS : str.EMAIL_EXISTS, 1);
 			};
-		};break;
-		case "/dataGet": {
-			if(req.method == "GET"){
-				if(fs.existsSync("userdata.txt")){
-					var data = fs.readFileSync("userdata.txt");
-					res.write(data);
-					res.end();
+		});
+	else{
+		showProfile(req, res, err, 1);
+	};
+});
+
+app.post('/login', function(req, res){
+	var data = req.post;
+	dbutils.getUser(data.login, data.pwd, function(result){
+		if(result && !result.resetPwdSent){
+			req.session.flush();
+			if(result.verified || result.permLevel >= 3){
+				req.session.put('username', result.username);
+				if(result.pwdMustChange){
+					req.session.flash('userId', result._id);//keep only for next request
+					req.session.flash('deprived', true);
+					showProfile(req, res, str.PWD_MUST_CHANGE + '\n' + fs.readFileSync('resetPwdForm.html'), 0)
 				}else{
-					res.writeHead(404);
-					res.write("Data not found.");
-					res.end();
-				};
-			};break;
-		};
-		case "/profil.html":{
-			session.startSession(req, res, (err) => {
-				showProfile(req, res);
-			});
-		};break;
-		case "/login": {
-			if(req.method == "POST"){
-				var body = '';
-				req.on('data', chunk => {
-					body += chunk;
-				});
-				req.on('end', () => {
-					console.log(body);
-					var data = qs.parse(body);
-					mongodb.connect(dbURL, function(err, db){
-						if(err)throw err;
-						dbo = db.db("blogmaster");
-						dbo.collection("accounts").findOne({username: data.login, password: data.pwd}, function(err, result){
-							if(result){
-								session.startSession(req, res, (err) => {
-									if(err)throw err;
-									req.session.put('userId', result._id);//having key userId in the session object means logged user
-									if(result.permLevel >= 3)req.session.put('op', true);
-									db.close();
-									
-									showProfile(req, res, function(){
-										res.write("Zalogovano. Identyfikator: " + req.session.get('userId'));
-									});
-								})//start session for a logged user
-							}else{
-								db.close();
-								
-								session.startSession(req, res, (err) => {
-									showProfile(req, res, function(){
-										res.write("Błędne hasło lub login.");
-									});
-								});
-							};
-						});
-					});
-				});
-			};
-		};break;
-		case "/newAccount":{
-			session.startSession(req, res, (err) => {
-				if(req.method == "POST" && req.session.has('op')){
-					getPost(req, function(str){
-						var data = qs.parse(str);
-							mongodb.connect(dbURL, function(err, db){
-							if(err)throw err;
-							dbo = db.db("blogmaster");
-							dbo.collection("accounts").insertOne({username: data.username, password: data.password, permLevel: (data.op ? 3 : 1)}, function(err, result){
-								if(err)throw err;
-								db.close();
-								showProfile(req, res, function(){
-									res.write("Dodano nowe konto.");
-								});
-							});
-						});
-					});
-				}else{
-					res.writeHead(501);
-					res.write('null');
-				};
-			});
-		};break;
-		case "/setAccount":{
-			session.startSession(req, res, (err) => {
-				if(req.method == "POST" && req.session.has('op')){
-					getPost(req, function(str){
-						var data = qs.parse(str);
-							mongodb.connect(dbURL, function(err, db){
-							if(err)throw err;
-							dbo = db.db("blogmaster");
-							dbo.collection("accounts").updateOne({_id: new mongo.ObjectID(data._id)}, {$set: {username: data.username, password: data.password, permLevel: (data.op ? 3 : 1)}}, function(err, result){
-								if(err)throw err;
-								db.close();
-								showProfile(req, res, function(){
-									res.write("Zapisano.");
-								});
-							});
-						});
-					});
-				};
-			});
-		};break;
-		case "/removeAccount":{
-			session.startSession(req, res, (err) => {
-				if(req.method == "POST" && req.session.has('op')){
-					getPost(req, function(str){
-						var data = qs.parse(str);
-							mongodb.connect(dbURL, function(err, db){
-							if(err)throw err;
-							dbo = db.db("blogmaster");
-							dbo.collection("accounts").deleteOne({_id: new mongo.ObjectID(data._id)}, function(err, result){
-								if(err)throw err;
-								db.close();
-								showProfile(req, res, function(){
-									res.write("Usunięto.");
-								});
-							});
-						});
-					});
-				};
-			});
-		};break;
-		case "/newArticle":{
-			session.startSession(req, res, (err) => {
-				if(req.method == "POST" && req.session.has('userId')){
-					getPost(req, function(str){
-						var data = qs.parse(str);
-							mongodb.connect(dbURL, function(err, db){
-							if(err)throw err;
-							dbo = db.db("blogmaster");
-							dbo.collection("articles").insertOne({title: data.title, text: data.text, publishDate: data.date, authorId: req.session.get('userId')}, function(err, result){
-								if(err)throw err;
-								db.close();
-								showProfile(req, res, function(){
-									res.write("Dodano nowy artykuł.");
-								});
-							});
-						});
-					});
-				};
-			});
-		};break;
-		case "/setArticle":{
-			session.startSession(req, res, (err) => {
-				if(req.method == "POST" && req.session.has('userId')){
-					getPost(req, function(str){
-						var data = qs.parse(str);
-							mongodb.connect(dbURL, function(err, db){
-							if(err)throw err;
-							dbo = db.db("blogmaster");
-							dbo.collection("articles").updateOne({_id: new mongo.ObjectID(data._id), authorId: req.session.get('userId')}, {$set: {title: data.title, text: data.text, publishDate: data.date}}, function(err, result){
-								if(err)throw err;
-								db.close();
-								showProfile(req, res, function(){
-									res.write("Zapisano.");
-								});
-							});
-						});
-					});
-				};
-			});
-		};break;
-		case "/removeArticle":{
-			session.startSession(req, res, (err) => {
-				if(req.method == "POST" && req.session.has('userId')){
-					getPost(req, function(str){
-						var data = qs.parse(str);
-							mongodb.connect(dbURL, function(err, db){
-							if(err)throw err;
-							dbo = db.db("blogmaster");
-							dbo.collection("articles").deleteOne({_id: new mongo.ObjectID(data._id), authorId: req.session.get('userId')}, function(err, result){
-								if(err)throw err;
-								db.close();
-								showProfile(req, res, function(){
-									res.write("Usunieto.");
-								});
-							});
-						});
-					});
-				};
-			});
-		};break;
-		case "/logout":{
-			session.startSession(req, res, (err) => {
-				if(err)throw err;
-				req.session.forget('userId');
-				req.session.forget('op');
-				
-				showProfile(req, res, function(){
-					res.write("Wylogowano pomyślnie");
-				});
-			});
-		};break;
-		case "/nowy_system.html":{
-			var std = fs.readFileSync("htdocs/index.html");
-			getNewArticles(function(list){
-				res.write(std.toString().replace('##articles', list));
-				res.end();
-			});
-		};break;
-		default: {
-			if(fs.existsSync(sciezka)){
-				if(fs.lstatSync(sciezka).isDirectory()){
-					var defaultFile = sciezka + "index.html";
-					if(fs.existsSync(defaultFile)){
-						console.log("Default file " + sciezka);
-						fs.readFile(defaultFile, function(err,data){
-							res.write(data);
-							res.end();
-						});
-					}else{
-						console.log("Unknown default file " + sciezka);
-						res.write("Plik nie istnieje 404 :<");
-						res.end();
-					};
-				}else{//system kont z baza danych, kazdy artykul przypisany do autora, ktory moze go edytowac, admin z zarzadzaniem kont,
-					console.log(sciezka + "\n");
-					if(req.method == "GET"){
-						console.log("other one");
-						fs.readFile(sciezka,function(err, data){
-							var replaces = fs.readFileSync("replaceItems.txt").toString().split("\n");
-							replaces = replaces.map(function(a){return eval(a)});
-							//res.write(replaces.join("\n"));
-							//console.log(replaces.length);
-							//res.end();
-							var toReplace;
-							if(data.toString().indexOf("##articles") != -1){
-								toReplace = data.toString().replace("##articles", getArticles().join(""));
-							}else
-								toReplace = data.toString();
-							for(var i = 0; i < toReplace.length; i += 2){
-								toReplace = toReplace.replace(replaces[i], replaces[i + 1]);
-							};
-							res.write(toReplace);
-							res.end();
-						});
-					}else{
-						console.log("Unknown request");
-						res.writeHead(501);
-						res.write("Unknown request");
-					};
+					req.session.put('userId', result._id);//having key userId in the session object means logged user
+					if(result.permLevel >= 3)req.session.put('op', true);
+					showProfile(req, res, str.LOGGED_ID + req.session.get('userId'));//start session for a logged user
 				};
 			}else{
-				console.log("Unknown file " + sciezka);
-				res.write("Plik nie istnieje 404 :>");
-				res.end();
+				showProfile(req, res, str.ACC_NOT_VERIFIED + fs.readFileSync('resendEmailForm.html').toString().replace('##_id', result._id));
 			};
-		};break;
+		}else{
+			showProfile(req, res, str.INV_CREDENTIALS);
+		};
+	});
+});
+
+app.post('/changePassword', function(req, res){
+	if(isSuppUser(req)){
+		var data = req.post;
+		var err;
+		if(!vali.password(data.new1))err = str.WEAK_PWD;
+		if(!err){
+			dbutils.setUserPassword(req.session.get('userId'), data.current, data.new1, function(result){
+				if(result){
+					showProfile(req, res, str.PWD_CHNG_DONE, 2);
+				}else{
+					showProfile(req, res, str.WRONG_PWD, 2);
+				};
+			});
+		}else{
+			showProfile(req, res, err, 2);
+		};
+	}else next();
+});
+
+app.route('/resendEmail')
+	.post(function(req, res){
+		var data = req.post;
+		var err;
+		if(!vali.email(data.email))err = 'Niepoprawny e-mail';
+		if(!err)
+			dbutils.getUserById(data._id, function(result){
+				if(result){
+					if(!result.verified){
+						if(!result.activationLinkSent){
+							if(result.activationCode){
+								if(!result.email || result.email != data.email){
+									dbutils.findUsernameOrEmail(0, data.email, (found) => {
+										if(!found){
+											dbutils.setUserMeta(result._id, {email: data.email});
+											activatorMail(data.email, result.activationCode, result.username, function(err, info){
+												dbutils.setUserMeta(result._id,{activationLinkSent: true});
+											});
+											showProfile(req, res, str.VER_EMAIL_SENT + fs.readFileSync('activationForm.html'), 0);
+										}else{
+											showProfile(req, res, str.EMAIL_EXISTS + resendEmailForm(result._id), 0);
+										};
+									});
+								}else{
+									activatorMail(data.email, result.activationCode, result.username, function(err, info){
+										dbutils.setUserMeta(result._id,{activationLinkSent: true});
+									});
+									showProfile(req, res, str.VER_EMAIL_SENT + fs.readFileSync('activationForm.html'), 0);
+								};
+							}else{
+								dbutils.addUserTail(result._id);
+								showProfile(req, res, str.ERR_TRY_AGAIN + resendEmailForm(result._id), 0);
+							};
+						}else{
+							showProfile(req, res, str.VER_EMAIL_QUOTA_EXCEEDED, 0);
+						};
+					}else{
+						showProfile(req, res, str.ACC_ALREADY_VERIFIED, 0);
+					};
+				}else{
+					showProfile(req, res, str.ACC_NOT_EXISTS, 0);
+				};
+			});
+		else{
+			showProfile(req, res, err, 0);
+		};
+	})
+	.get(function(req, res){
+		showProfile(req, res, fs.readFileSync('activationForm.html'), 0);
+	});
+
+app.get('/activate', function(req, res){
+	var data = qs.parse(req.url.slice(req.url.indexOf('?') + 1));
+	dbutils.getUserActivatable(data.a || '', function(result){
+		if(result){
+			dbutils.setUserMeta(result._id,{verified: true});
+			dbutils.flushUserCodes(result._id);
+			showProfile(req, res, str.ACC_VER_DONE, 0);
+		}else{
+			showProfile(req, res, str.WRONG_VER_CODE + fs.readFileSync('activationForm.html'), 0);
+		};
+	});
+});
+
+app.route('/forgotPassword')
+	.post(function(req, res){
+		var data = req.post;
+		if(data.login && data.email){
+			dbutils.getUserByMeta({username: data.login, email: data.email}, function(result){
+				if(result){
+					if(result.resetPwdCode){
+						resetPwdMail(data.email, result.resetPwdCode, data.login, function(err, info){
+							dbutils.setUserMeta(result._id, {resetPwdSent: true});
+						});
+						showProfile(req, res, str.VER_EMAIL_SENT + fs.readFileSync('activationForm.html').toString().replace('activate', 'resetPassword'), 2);
+					}else{
+						dbutils.addUserTail(result._id);
+						showProfile(req, res, str.ERR_TRY_AGAIN, 2);
+					};
+				}else{
+					showProfile(req, res, str.ACC_NOT_EXISTS, 2);
+				};
+			})
+		}else
+			showProfile(req, res, str.ACC_NOT_EXISTS, 2);
+	})
+	.get(function(req, res){
+		showProfile(req, res, fs.readFileSync('activationForm.html').toString().replace('activate', 'resetPassword'), 2);
+	})
+	
+app.route('/resetPassword')
+	.post(function(req, res){
+		var data = req.post;
+		var err;
+		if(!vali.password(data.pwd1))err = str.WEAK_PWD;
+		if(data.pwd1 != data.pwd2)err = str.PWD_NOT_IDENTICAL;
+		if(!err){
+			dbutils.getUserById(req.session.get('userId'), function(result){
+				if(result){
+					if(dbutils.verify(data.pwd1, result.password)){
+						req.session.reflash();
+						showProfile(req, res, str.PWD_IDENTICAL + '\n' + fs.readFileSync('resetPwdForm.html'), 0);
+					}else{
+						req.session.forget('deprived');
+						dbutils.setUserMeta(result._id, {resetPwdSent: false, pwdMustChange: false});
+						dbutils.setUserPasswordNosec(result._id, data.pwd1);
+						dbutils.flushUserCodes(result._id);
+						showProfile(req, res, str.PWD_CHNG_DONE, 0);
+					};
+				}else{
+					showProfile(req, res, str.ACC_NOT_EXISTS + '\n' + fs.readFileSync('resetPwdForm.html'), 2);
+				};
+			});
+		}else{
+			req.session.reflash();
+			showProfile(req, res, err + '\n' + fs.readFileSync('resetPwdForm.html'), 2);
+		};
+	})
+	.get(function(req, res){
+		var data = qs.parse(req.url.slice(req.url.indexOf('?') + 1));
+		dbutils.getUserByMeta({resetPwdCode: data.a, resetPwdSent: true},function(result){
+			if(result){
+				req.session.flash('userId', result._id);
+				req.session.flash('deprived', true);
+				showProfile(req, res, str.SET_PWD + fs.readFileSync('resetPwdForm.html'), 2);
+			}else{
+				showProfile(req, res, str.INV_VER_CODE + fs.readFileSync('activationForm.html').toString().replace('activate', 'resetPassword'), 2);
+			};
+		});
+	})
+	
+app.post('/newAccount', function(req, res, next){
+	if(req.session.has('op')){
+		var data = req.post;
+		var err;
+		if(!vali.username(data.username))err = str.INV_USERNAME;
+		if(!vali.password(data.password))err = str.INV_PWD;
+		if(!vali.email(data.email))err = str.INV_EMAIL + data.email;
+		if(!err)
+			dbutils.addUser(data.username, data.password, data.op, data.email, function(result){
+				showProfile(req, res, str.ACC_ADDED, 1);
+			});
+		else showProfile(req, res, err, 1);
+	}else next();
+});
+
+app.post('/setAccount', function(req, res, next){
+	if(req.session.has('op')){
+		var data = req.post;
+		if(data.pwdMustChange)//value = 'on' if specified
+			dbutils.setUserMeta(data._id, {pwdMustChange: true});
+		else
+			dbutils.setUserMeta(data._id, {pwdMustChange: false});
+		dbutils.setUser(data._id, data.username, data.email, data.op, function(result){
+			showProfile(req, res, "Zapisano.", 1);
+		});
+	}else next();
+});
+
+app.post('/removeAccount', function(req, res, next){
+	if(req.session.has('op')){
+		dbutils.delUser(req.post._id, function(r1, r2){
+			showProfile(req, res, "Usunięto konto oraz " + r1.result.n + " artykułów przypisanych do konta.", 1);
+		});
+	}else next();
+});
+
+app.post('/query', function(req, res, next){
+	if(req.session.has('op')){
+		dbutils.rawQuery(req.post.query, function(err, result, cols){
+			if(err)
+				showProfile(req, res, "Wystąpił bląd:\n<br>" + req.post.query + '<br>\n==========\n<br>' + err, 1);
+			else
+				showProfile(req, res, "Zapytanie wykonano pomyslnie:\n<br>" + req.post.query + '<br>\n==========\n<br>' + JSON.stringify(result || '') + '<br>\n==========\n<br>' + JSON.stringify(cols || ''), 1);
+		});
+	}else next();
+});
+
+app.post('/newArticle', function(req, res, next){
+	if(isSuppUser(req)){
+		var data = req.post;
+		var err;
+		if(!vali.title(data.title))err = str.INV_TITLE;
+		if(!vali.date(data.date))err = str.INV_DATE;
+		if(!err)
+			dbutils.addArticle(data.title, data.text, data.date, req.session.get('userId'), function(result){
+				showProfile(req, res, str.ART_ADDED, 1);
+			});
+		else showProfile(req, res, err, 1);
+	}else next();
+});
+
+app.post('/setArticle', function(req, res, next){
+	if(isSuppUser(req)){
+		var data = req.post;
+		dbutils.setArticle(data._id, data.title, data.text, data.date, req.session.get('userId'), function(result){
+			showProfile(req, res, result ? str.SAVED : str.ERR, 1);
+		});
+	}else next();
+});
+
+app.post('/removeArticle', function(req, res, next){
+	if(isSuppUser(req)){
+		var data = req.body;
+		dbutils.delArticle(data._id, req.session.get('userId'), function(result){
+			showProfile(req, res, result ? str.DELETED : str.ERR, 1);
+		});
+	}else next();
+});
+	
+app.post('/dataModify', function(req, res){
+	try{
+		var data = JSON.parse(req.postRaw);
+		var out = dbutils.valiData(data);
+		if(out == true){
+			var fd = fs.openSync("userdata.txt","w");//write data to the file if good
+			fs.write(fd, body, (err, bytes, buff) => {
+				if(err)throw err;
+				fs.close(fd, (err) => {
+					if(err)throw err;
+					res.writeHead(200, {'Content-Type': 'text/JSON'});
+					res.write(body);
+				});
+			});
+		}else{
+			console.log("Bad data");
+			res.writeHead(400, {'Content-Type': 'text/plain'});
+			res.end("Invalid JSON variant: " + out);
+		};
+	}catch(err){
+		console.log(err);
+		res.writeHead(500, {'Content-Type': 'text/plain'});
+		res.end("Internal server error");
 	};
-}).listen(8080);
+});
+
+app.use(function (req, res) {
+	res.status(404).sendFile(__dirname + '/htdocs/static/err404.html');
+});
+
+app.listen(8080, function(){
+	console.log('Listening on *:8080');
+});
+
+console.log(myIp);

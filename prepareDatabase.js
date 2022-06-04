@@ -21,11 +21,10 @@ var article = {
 };
 
 var done = 0;
-var dbo;
 
 mongodb.connect(url, function(err, db){
 	if(err)throw err;
-	dbo = db.db("blogmaster");
+	var dbo = db.db("blogmaster");
 	dbo.createCollection("accounts", function(err, res){
 		if(err)throw err;
 		dbo.collection("accounts").insertOne(adminObj, function(err, res){

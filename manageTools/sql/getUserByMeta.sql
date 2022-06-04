@@ -1,0 +1,4 @@
+SELECT * 
+FROM accounts
+WHERE ?
+LIMIT 1

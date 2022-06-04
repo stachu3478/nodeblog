@@ -3,14 +3,19 @@
 	<head>
 		<title>Article system 3000 - Your profile</title>
 		<meta charset="UTF-8">
+		<link rel='stylesheet' href='style.css' type='text/css'>
 	</head>
 	<body>
 		<h1>
 			Baner
 		</h1>
+		<h4>
+			##out
+		</h4>
 			##main
 		<nav>
 			<a href=index.html>Strona główna</a>
+			<a href=nowy_system.html>Nowy system artykułów</a>
 			<a href=profil.html>Mój profil</a>
 		</nav>
 		<footer>
@@ -19,7 +24,25 @@
 		<script src="jquery.min.js"></script>
 		<script src="fhandler.js"></script>
 		<script>
-			window.oload = load();
+			var ok = false;
+			var el;
+			function pokazNaglowek(id){
+				var naglowki = ["profil","edytor","zmienHaslo"];
+				for(var i = 0;i<3;i++){
+					if(i == id){
+						document.getElementById(naglowki[i]).hidden = false;
+						$('.secty')[i].style.borderBottomWidth = '0px';
+					} else {
+						document.getElementById(naglowki[i]).hidden = true;
+						$('.secty')[i].style.borderBottomWidth = '2px';
+					};
+				};
+			};
+			window.onload = function(){
+				load();
+				pokazNaglowek(##naglowek);
+				$('#main')[0].hidden = false;
+			};
 			document.getElementsByTagName("footer")[0].innerText += " " + new Date().getFullYear();
 		</script>
 	</body>

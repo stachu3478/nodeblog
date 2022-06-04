@@ -1,5 +1,41 @@
-<form action="login" method="POST">
-	<input type=text name=login placeholder=ksywka><br>
-	<input type=password name=pwd placeholder=haslo><br>
-	<input type=submit value="Zaloguj">
-</form>
+<section id=l>
+	<form action="login" method="POST">
+		<input type=text name=login placeholder=ksywka><br>
+		<input type=password name=pwd placeholder=haslo><br>
+		<input type=submit value="Zaloguj"><br>
+	</form>
+	<button onclick='p(2)'>Zapomniane hasło</button>
+	<button onclick='p(1)'>Załóż konto</button>
+</section>
+<section id=r>
+	<form action="register" method="POST">
+		<input type=text name=login placeholder=ksywka><br>
+		<input type=password name=pwd placeholder=haslo oninput='calcStrength()'><span id=str></span><div id=strength><div id=power></div></div><br>
+		<input type=password name=pwd2 placeholder=powtorz_haslo><br>
+		<input type=text name=email placeholder=e-mail><br>
+		<input type=submit value="Rejestracja"><br>
+	</form>
+	<button onclick='p(0)'>Powrót do logowania</button>
+</section>
+<section id=f>
+	<form action="forgotPassword" method="POST">
+		<input type=text name=login placeholder=login><br>
+		<input type=text name=email placeholder=e-mail><br>
+		<input type=submit value="Wyślij"><br>
+	</form>
+	<a href='forgotPassword'>Mam już kod resetowania hasła</a><br>
+	<button onclick='p(0)'>Powrót do logowania</button>
+</section>
+<script>
+	function p(id){
+		var naglowki = ["l","r","f"];
+		for(var i = 0;i<3;i++){
+			if(i == id){
+				document.getElementById(naglowki[i]).hidden = false;
+			} else {
+				document.getElementById(naglowki[i]).hidden = true;
+			};
+		};
+	};
+	p(##naglowek);
+</script>

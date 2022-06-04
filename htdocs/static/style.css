@@ -1,0 +1,33 @@
+.secty{
+	padding: 15px;
+	color: AliceBlue;
+	background-color: MidnightBlue;
+	max-width: 100px;
+	text-align: center;
+	border: lightBlue 3px solid;
+	float: left;
+}
+.secty:hover{
+	cursor: pointer;
+	background-color: Navy;
+}
+.secty:active{
+	cursor: pointer;
+	background-color: Purple;
+}
+.nav{
+	background-color: black;
+	width: 100%;
+	padding: 5px;
+	margin-right: 5px;
+	height: 53.3333333333333333333333333333333333px;
+}
+#strength{
+	width: 100px;
+	height: 20px;
+	border: 1px black solid;
+}
+#power{
+	float: left;
+	height: 100%;
+}
